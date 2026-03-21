@@ -1,9 +1,3 @@
-/*
-CSC3916 HW4
-File: Server.js
-Description: Web API scaffolding for Movie API
- */
-
 var express = require('express');
 var bodyParser = require('body-parser');
 var passport = require('passport');
@@ -87,8 +81,112 @@ router.post('/signin', function (req, res) {
     })
 });
 
+router.route('/movies')
+    .get(authJwtController.isAuthenticated, async (req, res) => {
+      try {
+        const movies = await Movie.find({}); // Fetch all movies from the database
+        return res.json(movies); // Return the movies as JSON
+      } catch (err) {
+        console.error(err); // Log the error
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
+      }
+    })
+    .post(authJwtController.isAuthenticated, async (req, res) => {
+      try {
+        if(!req.body.actors || req.body.actors.length === 0) {
+            return res.status(400).json({ success: false, message: 'At least one actor is required.' }); // 400 Bad Request
+        }
+        else {
+          const movie = new Movie(req.body); // Create a new movie with the request body
+          await movie.save();
+          res.status(201).json({ success: true, msg: 'Movie created successfully.', movie });
+        }
+      } catch (err) {
+        console.error(err); // Log the error
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
+      }
+    });
+
+router.route('/movies/:title')
+    .get(authJwtController.isAuthenticated, async (req, res) => {
+      try{
+        const movie = await Movie.findOne({ title: req.params.title }); // Find movie by title
+        if (!movie) {
+          return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
+        }
+        res.json({success: true, msg: "Movie Found", movie});
+      } catch (err) {
+        console.error(err); // Log the error
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
+      }
+    })
+    .put(authJwtController.isAuthenticated, async (req, res) => {
+      try{
+        const movie = await Movie.findOneAndUpdate(
+          { title: req.params.title }, 
+          req.body, 
+          { new: true, runValidators: true } // Return the updated document and run validators
+        );
+        if (!movie) {
+          return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
+        }
+        res.json({ success: true, msg: 'Movie updated successfully.', movie }); // Return success message
+      } catch (err) {
+        console.error(err); // Log the error
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
+      }
+    })
+    .delete(authJwtController.isAuthenticated, async (req, res) => {
+      try{
+        const movie = await Movie.findOneAndDelete({ title: req.params.title }); // Delete movie by title
+        if (!movie) {
+          return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
+        }
+        res.json({ success: true, msg: 'Movie deleted successfully.', movie }); // Return success message
+      } catch (err) {
+        console.error(err); // Log the error
+        res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
+      }
+    });
+
+router.route('/reviews')
+    .get(authJwtController.isAuthenticated, async (req, res) => {
+        try {
+            const reviews = await Review.find({});
+            return res.json(reviews); // Return the movies as JSON
+        } catch (err) {
+            console.error(err); // Log the error
+            res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
+        }
+    })
+    .post(authJwtController.isAuthenticated, async (req, res) => {
+        try {
+            const review = new Review(req.body);
+            await review.save();
+            res.status(201).json({ success: true, msg: 'Review created successfully.', review });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' });
+        }
+    })
+    .delete(authJwtController.isAuthenticated, async (req, res) => {
+        try {
+            const review = await Review.findOneAndDelete({ _id: req.params.id });
+            if (!review) {
+                return res.status(404).json({ success: false, message: 'Review not found.' });
+            }
+            res.json({ success: true, msg: 'Review deleted successfully.', review });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' });
+        }
+    });
+
 app.use('/', router);
-app.listen(process.env.PORT || 8080);
+
+const PORT = process.env.PORT || 8080; // Define PORT before using it
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+});
+
 module.exports = app; // for testing only
-
-
