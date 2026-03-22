@@ -149,11 +149,18 @@ router.route('/movies/:title')
       }
     });
 
-router.route('/reviews')
+router.route('/movies/:movieId/reviews')
     .get(authJwtController.isAuthenticated, async (req, res) => {
         try {
-            const reviews = await Review.find({});
-            return res.json(reviews); // Return the movies as JSON
+            const { movieId } = req.params;
+            if(!movieId) {
+                return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
+            }
+            const reviews = await Review.find({ movieId });
+            if(!reviews || reviews.length === 0) {
+                return res.status(404).json({ success: false, message: 'No reviews found for this movie.' }); // 404 Not Found
+            }
+            return res.json(reviews); // Return the reviews as JSON
         } catch (err) {
             console.error(err); // Log the error
             res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
@@ -161,17 +168,48 @@ router.route('/reviews')
     })
     .post(authJwtController.isAuthenticated, async (req, res) => {
         try {
-            const review = new Review(req.body);
+            const { movieId } = req.params;
+            const movie = await Movie.findById(movieId);
+            
+            if (!movie) {
+                return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
+            }
+            
+            const review = new Review({ 
+                movieId,
+                username: req.body.username, // Use the authenticated user's username
+                review: req.body.review,
+                rating: req.body.rating
+             });
             await review.save();
             res.status(201).json({ success: true, msg: 'Review created successfully.', review });
         } catch (err) {
             console.error(err);
-            res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' });
+            res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
         }
     })
     .delete(authJwtController.isAuthenticated, async (req, res) => {
         try {
-            const review = await Review.findOneAndDelete({ _id: req.params.id });
+            const { movieId } = req.params;
+            
+            if (!movieId) {
+                return res.status(404).json({ success: false, message: 'Movie not found.' }); // 400 Bad Request
+            }
+
+            const review = await Review.deleteMany({ movieId }); // Delete all review associated with the movie
+
+            res.json({ success: true, msg: 'Review deleted successfully.', review });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ success: false, message: 'Something went wrong. Please try again later.' }); // 500 Internal Server Error
+        }
+    });
+
+router.route('/reviews/:reviewId')
+    .delete(authJwtController.isAuthenticated, async (req, res) => {
+        try {
+            const { reviewId } = req.params;
+            const review = await Review.findByIdAndDelete(reviewId);
             if (!review) {
                 return res.status(404).json({ success: false, message: 'Review not found.' });
             }
