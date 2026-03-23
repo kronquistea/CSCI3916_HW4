@@ -121,8 +121,9 @@ router.route('/movies/:title')
           return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
         }
 
-        const { id } = movie._id; // Get the movie's ID
+        const id = movie._id; // Get the movie's ID
         const includeReviews = req.query.reviews === 'true'; // Check if reviews should be included
+
         if (includeReviews) {
             const movieWithReviews = await Movie.aggregate([
                 {
