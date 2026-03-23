@@ -139,7 +139,7 @@ router.route('/movies/:title')
                 }
             ]);
 
-            if (!movieWithReviews.length == 0) {
+            if (!movieWithReviews.length) {
                 return res.status(404).json({ success: false, message: 'Movie With Reviews not found.' }); // 404 Not Found
             }
             
