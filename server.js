@@ -122,7 +122,7 @@ router.route('/movies/:title')
         }
 
         const { id } = movie._id; // Get the movie's ID
-        const includeReviews = req.query.includeReviews === 'true'; // Check if reviews should be included
+        const includeReviews = req.query.reviews === 'true'; // Check if reviews should be included
         if (includeReviews) {
             const movieWithReviews = await Movie.aggregate([
                 {
