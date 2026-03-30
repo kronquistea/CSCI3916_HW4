@@ -115,18 +115,12 @@ router.route('/movies')
 router.route('/movies/:id')
     .get(authJwtController.isAuthenticated, async (req, res) => {
       try{
-        const movie = await Movie.findOne({ id: req.params.id }); // Find movie by title
-
-        if (!movie) {
-          return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
-        }
-        
         const includeReviews = req.query.reviews === 'true'; // Check if reviews should be included
 
         if (includeReviews) {
             const movieWithReviews = await Movie.aggregate([
                 {
-                    $match: { _id: movie._id } // Match the movie by ID
+                    $match: { _id: new mongoose.Types.ObjectId(req.params.id) } // Match the movie by ID
                 },
                 {
                     $lookup: {
@@ -145,6 +139,12 @@ router.route('/movies/:id')
             res.json({ success: true, msg: "Movie With Reviews Found", movie: movieWithReviews[0] }); // Return the movie with reviews
         }
         else {
+            const movie = await Movie.findById(req.params.id); // Find movie by title
+
+            if (!movie) {
+            return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
+            }
+            
             res.json({ success: true, msg: "Movie Found", movie }); // Return the movie without reviews
         }
       } 
@@ -155,11 +155,7 @@ router.route('/movies/:id')
     })
     .put(authJwtController.isAuthenticated, async (req, res) => {
       try{
-        const movie = await Movie.findOneAndUpdate(
-          { id: req.params.id }, 
-          req.body, 
-          { new: true, runValidators: true } // Return the updated document and run validators
-        );
+        const movie = await Movie.findByIDAndUpdate(req.params.id, req.body, {new: true, runValidators: true});
 
         if (!movie) {
           return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
@@ -174,7 +170,7 @@ router.route('/movies/:id')
     })
     .delete(authJwtController.isAuthenticated, async (req, res) => {
       try{
-        const movie = await Movie.findOneAndDelete({ id: req.params.id }); // Delete movie by title
+        const movie = await Movie.findByIdAndDelete(req.params.id)
 
         if (!movie) {
           return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
