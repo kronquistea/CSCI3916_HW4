@@ -112,10 +112,10 @@ router.route('/movies')
       }
     });
 
-router.route('/movies/:title')
+router.route('/movies/:id')
     .get(authJwtController.isAuthenticated, async (req, res) => {
       try{
-        const movie = await Movie.findOne({ title: req.params.title }); // Find movie by title
+        const movie = await Movie.findOne({ id: req.params.id }); // Find movie by title
 
         if (!movie) {
           return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
@@ -156,7 +156,7 @@ router.route('/movies/:title')
     .put(authJwtController.isAuthenticated, async (req, res) => {
       try{
         const movie = await Movie.findOneAndUpdate(
-          { title: req.params.title }, 
+          { id: req.params.id }, 
           req.body, 
           { new: true, runValidators: true } // Return the updated document and run validators
         );
@@ -174,7 +174,7 @@ router.route('/movies/:title')
     })
     .delete(authJwtController.isAuthenticated, async (req, res) => {
       try{
-        const movie = await Movie.findOneAndDelete({ title: req.params.title }); // Delete movie by title
+        const movie = await Movie.findOneAndDelete({ id: req.params.id }); // Delete movie by title
 
         if (!movie) {
           return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
