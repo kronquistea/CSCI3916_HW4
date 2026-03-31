@@ -5,6 +5,7 @@ var authController = require('./auth');
 var authJwtController = require('./auth_jwt');
 var jwt = require('jsonwebtoken');
 var cors = require('cors');
+var mongoose = require('mongoose');
 var User = require('./Users');
 var Movie = require('./Movies');
 var Review = require('./Reviews');
@@ -115,18 +116,14 @@ router.route('/movies')
 router.route('/movies/:id')
     .get(authJwtController.isAuthenticated, async (req, res) => {
       try{
-            const movie = await Movie.findById(req.params.id); // Find movie by title
-
-            if (!movie) {
-            return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
-            }
+        const id = req.params.id
 
         const includeReviews = req.query.reviews === 'true'; // Check if reviews should be included
 
         if (includeReviews) {
             const movieWithReviews = await Movie.aggregate([
                 {
-                    $match: { _id: movie._id } // Match the movie by ID
+                    $match: { _id: new mongoose.Types.ObjectId(id) } // Match the movie by ID
                 },
                 {
                     $lookup: {
@@ -141,10 +138,16 @@ router.route('/movies/:id')
             if (!movieWithReviews.length) {
                 return res.status(404).json({ success: false, message: 'Movie With Reviews not found.' }); // 404 Not Found
             }
-            
+
             res.json({ success: true, msg: "Movie With Reviews Found", movie: movieWithReviews[0] }); // Return the movie with reviews
         }
         else {
+            const movie = await Movie.findById(req.params.id); // Find movie by title
+
+            if (!movie) {
+                return res.status(404).json({ success: false, message: 'Movie not found.' }); // 404 Not Found
+            }
+
             res.json({ success: true, msg: "Movie Found", movie }); // Return the movie without reviews
         }
       } 
