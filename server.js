@@ -85,9 +85,31 @@ router.post('/signin', function (req, res) {
 router.route('/movies')
     .get(authJwtController.isAuthenticated, async (req, res) => {
       try {
-        const movies = await Movie.find({}); // Fetch all movies from the database
+        const includeReviews = req.query.reviews == "true";
 
-        return res.json(movies); // Return the movies as JSON
+        if (includeReviews) {
+            const allMoviesWithReviews = await Movie.aggregate([
+                {
+                    $lookup: {
+                        from: "reviews",
+                        localField: "_id",
+                        foreignField: "movieId",
+                        as: "reviews"
+                    }
+                }
+            ]);
+
+            if (allMoviesWithReviews.length === 0) {
+                return res.status(404).json({ success: false, message: 'No movies with reviews found.' }); // 404 Not Found
+            }
+
+            return res.json({ success: true, message: "All Movies and their Reviews Found", movies: allMoviesWithReviews })
+        }
+        else {
+            const movies = await Movie.find({}); // Fetch all movies from the database
+    
+            return res.json(movies); // Return the movies as JSON
+        }
       } 
       catch (err) {
         console.error(err); // Log the error
