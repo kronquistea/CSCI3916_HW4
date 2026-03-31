@@ -6,6 +6,8 @@ var authJwtController = require('./auth_jwt');
 var jwt = require('jsonwebtoken');
 var cors = require('cors');
 var mongoose = require('mongoose');
+var axios = require('axios');
+var crypto = require('crypto');
 var User = require('./Users');
 var Movie = require('./Movies');
 var Review = require('./Reviews');
@@ -19,10 +21,39 @@ app.use(passport.initialize());
 
 var router = express.Router();
 
+const GA_MEASUREMENT_ID = process.env.GA_KEY; // Your Google Analytics Measurement ID
+const GA_API_SECRET = process.env.GA_SECRET; // Your Google Analytics API Secret
+
+async function sendGAEvent(movieName, genre) {
+    const url = `https://www.google-analytics.com/mp/collect?measurement_id=${GA_MEASUREMENT_ID}&api_secret=${GA_API_SECRET}`;
+
+    const payload = {
+        client_id: crypto.randomUUID(),
+        events: [
+            {
+                name: "review_created",
+                params: {
+                    movie_name: movieName,
+                    genre: genre,
+                    review_count: 1,
+                    endpoint: "POST /movies/:movieId/reviews"
+                }
+            }
+        ]
+    };
+
+    try {
+        await axios.post(url, payload);
+        console.log("GA event sent");
+    } catch (err) {
+        console.error("GA error:", err.message);
+    }
+}
+
 function getJSONObjectForMovieRequirement(req) {
     var json = {
         headers: "No headers",
-        key: process.env.UNIQUE_KEY,
+        key: process.env.SECRET_KEY,
         body: "No body"
     };
 
@@ -248,6 +279,8 @@ router.route('/movies/:movieId/reviews')
              });
             
             await review.save();
+
+            await sendGAEvent(movie.title, movie.genre); // Send event to Google Analytics
 
             res.status(201).json({ success: true, msg: 'Review created successfully.', review });
         } 
