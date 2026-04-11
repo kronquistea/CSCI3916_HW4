@@ -134,7 +134,7 @@ router.route('/movies')
                 return res.status(404).json({ success: false, message: 'No movies with reviews found.' }); // 404 Not Found
             }
 
-            return res.json({ allMoviesWithReviews })
+            return res.json(allMoviesWithReviews)
         }
         else {
             const movies = await Movie.find({}); // Fetch all movies from the database
