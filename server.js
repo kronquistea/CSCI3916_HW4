@@ -116,7 +116,7 @@ router.post('/signin', function (req, res) {
 router.route('/movies')
     .get(authJwtController.isAuthenticated, async (req, res) => {
       try {
-        const includeReviews = req.query.reviews == "true";
+        const includeReviews = req.query.reviews === "true";
 
         if (includeReviews) {
             const allMoviesWithReviews = await Movie.aggregate([
@@ -134,7 +134,7 @@ router.route('/movies')
                 return res.status(404).json({ success: false, message: 'No movies with reviews found.' }); // 404 Not Found
             }
 
-            return res.json({ success: true, message: "All Movies and their Reviews Found", movies: allMoviesWithReviews })
+            return res.json({ allMoviesWithReviews })
         }
         else {
             const movies = await Movie.find({}); // Fetch all movies from the database
